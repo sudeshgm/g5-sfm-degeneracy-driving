@@ -1,0 +1,7 @@
+# Fixed COLMAP configuration, identical for every clip (COLMAP 3.10-dev, apt, CPU only, no per-clip tuning)
+FRAMES: ring_front_center, 60 frames sampled uniformly over the clip (np.linspace over all frames, rounded); clips with <60 frames use all
+IMAGES: original JPEGs; SIFT downscales internally to max_image_size=1024
+feature_extractor: --ImageReader.camera_model PINHOLE --ImageReader.single_camera 1 --ImageReader.camera_params "fx,fy,cx,cy" taken from AV2 calibration intrinsics.feather (COLMAP default bundle-adjustment refinement left on) --SiftExtraction.use_gpu 0 --SiftExtraction.max_image_size 1024 --SiftExtraction.max_num_features 4096 --SiftExtraction.num_threads 6
+sequential_matcher: --SiftMatching.use_gpu 0 --SiftMatching.num_threads 6 --SequentialMatching.overlap 10 --SequentialMatching.loop_detection 0
+mapper: --Mapper.num_threads 6 (all other options COLMAP defaults: incremental mapper, min_model_size 10, multiple_models 1)
+model_analyzer on every resulting sparse model
