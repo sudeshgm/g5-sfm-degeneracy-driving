@@ -132,7 +132,7 @@ def main(log):
             m = (uv[:, 0] >= 0) & (uv[:, 0] < W) & (uv[:, 1] >= 0) & (uv[:, 1] < H)
             if m.any(): depths.append(np.median(Pc[m, 2]))
         depth = float(np.median(depths)) if depths else float("nan")
-        rec = dict(log=log, log_id=lid, n_frames_total=len(names), n_frames_used=len(sel),
+        rec = dict(settings_version=2, log=log, log_id=lid, n_frames_total=len(names), n_frames_used=len(sel),
                    duration_s=float((tsall[-1] - tsall[0]) * 1e-9), lidar_median_depth_m=depth)
         steps_all = np.linalg.norm(np.diff(Call, axis=0), axis=1)
         sp_all = steps_all / np.maximum(np.diff(tsall) * 1e-9, 1e-6)
@@ -147,14 +147,14 @@ def main(log):
         rec["blur_laplacian_var"] = float(np.median(lap)); rec["mean_brightness"] = float(np.mean(lum))
         rec["night_flag"] = int(rec["mean_brightness"] < NIGHT_LUM)
         db = f"{work}/db.db"; sp = f"{work}/sparse"; os.makedirs(sp)
-        cp = f"{intr.fx_px},{intr.fy_px},{intr.cx_px},{intr.cy_px}"
-        sh(f"colmap feature_extractor --database_path {db} --image_path {work}/img --ImageReader.camera_model PINHOLE "
+        cp = f"{intr.fx_px},{intr.fy_px},{intr.cx_px},{intr.cy_px},{intr.k1},{intr.k2},0,0,{intr.k3},0,0,0"  # v2: AV2 radial k1,k2,k3 modelled
+        sh(f"colmap feature_extractor --database_path {db} --image_path {work}/img --ImageReader.camera_model FULL_OPENCV "
            f"--ImageReader.single_camera 1 --ImageReader.camera_params {cp} --SiftExtraction.use_gpu 0 "
            f"--SiftExtraction.max_image_size 1024 --SiftExtraction.max_num_features 4096 --SiftExtraction.num_threads 6")
         sh(f"colmap sequential_matcher --database_path {db} --SiftMatching.use_gpu 0 --SiftMatching.num_threads 6 "
            f"--SequentialMatching.overlap 10 --SequentialMatching.loop_detection 0")
         try:
-            sh(f"colmap mapper --database_path {db} --image_path {work}/img --output_path {sp} --Mapper.num_threads 6", timeout=3600)
+            sh(f"colmap mapper --database_path {db} --image_path {work}/img --output_path {sp} --Mapper.num_threads 6 --Mapper.ba_refine_focal_length 0 --Mapper.ba_refine_principal_point 0 --Mapper.ba_refine_extra_params 0", timeout=3600)
         except Exception as e:
             rec["mapper_error"] = str(getattr(e, "stderr", e))[-300:]
         models = sorted(d for d in glob.glob(sp + "/*") if os.path.isdir(d))
