@@ -91,7 +91,9 @@ def main(log):
     lid = log.split("/")[1]
     outp = os.path.join(OUT, lid + ".json")
     if os.path.exists(outp): return
-    work = os.path.join(TMP, lid); shutil.rmtree(work, ignore_errors=True)
+    work = os.path.join(TMP, lid)
+    if os.path.isdir(work):  # another worker is on it
+        print("SKIP in progress", lid); return
     os.makedirs(work + "/img"); os.makedirs(work + "/lidar")
     base = f"{BUCKET}/{log}"
     try:
